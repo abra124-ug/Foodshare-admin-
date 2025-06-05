@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Share Admin</title>
+    <title>Food Share - Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
     <style>
         :root {
             --primary-blue: #3b82f6;
@@ -40,15 +41,12 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: var(--font-main);
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-blue-light);
-            overscroll-behavior: none;
-            height: 100vh;
-            position: relative;
+            font-family: var(--font-main);
+            background-color: var(--gray-50);
+            color: var(--gray-800);
         }
 
         /* Loading Screen */
@@ -61,829 +59,281 @@
             background-color: white;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             z-index: 9999;
-            transition: opacity 0.5s ease;
         }
 
         .loading-spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid var(--gray-200);
-            border-top: 4px solid var(--primary-blue);
+            border: 5px solid var(--gray-200);
+            border-top-color: var(--primary-blue);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: var(--gray-600);
-            font-size: 1rem;
-            margin-top: 15px;
+            to { transform: rotate(360deg); }
         }
 
         /* Auth Screen */
         .auth-screen {
-            display: none;
-            min-height: 100vh;
+            display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             padding: 2rem;
             background-color: white;
-            max-width: 480px;
-            margin: 0 auto;
-            position: relative;
         }
-        
+
         .auth-logo {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.8rem;
-            margin-bottom: 2.5rem;
-            transform-origin: center;
-            animation: logoEnter 1s ease-out;
-        }
-        
-        @keyframes logoEnter {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            margin-bottom: 2rem;
         }
 
         .auth-logo i {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: var(--primary-blue);
-            text-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+            margin-right: 1rem;
         }
 
         .auth-logo h1 {
-            color: var(--primary-blue-dark);
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .auth-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2.5rem;
-            border-bottom: 1px solid var(--gray-200);
-            position: relative;
-        }
-        
-        .auth-tab-indicator {
-            position: absolute;
-            bottom: -1px;
-            height: 2px;
-            background-color: var(--primary-blue);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .auth-tab {
-            padding: 0.85rem 1.2rem;
-            color: var(--gray-600);
-            cursor: pointer;
-            position: relative;
-            transition: all 0.3s ease;
-            z-index: 1;
-            font-weight: 500;
-            flex: 1;
-            text-align: center;
-        }
-
-        .auth-tab.active {
-            color: var(--primary-blue);
+            font-size: 1.5rem;
             font-weight: 600;
-        }
-
-        .auth-form-container {
-            flex: 1;
-            perspective: 1000px;
         }
 
         .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            transform-style: preserve-3d;
-            transform-origin: center center;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        #loginForm {
-            animation: formEnter 0.6s ease-out 0.2s backwards;
-        }
-        
-        #signupForm {
-            animation: formEnter 0.6s ease-out;
-        }
-        
-        @keyframes formEnter {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
         }
 
         .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
+            margin-bottom: 1.5rem;
         }
 
         .input-group label {
-            color: var(--gray-600);
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-left: 0.2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
         }
 
         .input-field {
             display: flex;
             align-items: center;
-            border: 1.5px solid var(--gray-300);
-            border-radius: 12px;
-            padding: 0 1.2rem;
-            overflow: hidden;
-            transition: all 0.25s ease;
-            background: white;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .input-field.error {
-            border-color: #ef4444;
-            animation: shake 0.4s ease-in-out;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            background-color: var(--gray-50);
         }
 
         .input-field i {
             color: var(--gray-400);
-            margin-right: 0.85rem;
-            font-size: 1.1rem;
-            transition: all 0.25s ease;
+            margin-right: 0.75rem;
         }
 
         .input-field input {
-            width: 100%;
-            padding: 1rem 0;
+            flex: 1;
             border: none;
-            font-size: 1rem;
             background: transparent;
-        }
-
-        .input-field input:focus {
+            font-family: var(--font-main);
+            font-size: 1rem;
+            color: var(--gray-800);
             outline: none;
-        }
-
-        .input-field:focus-within {
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        .input-field:focus-within i {
-            color: var(--primary-blue);
         }
 
         .error-message {
             color: #ef4444;
-            font-size: 0.8rem;
-            margin-top: 0.3rem;
-            margin-left: 0.2rem;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .btn {
-            display: flex;
-            justify-content: center;
+            display: inline-flex;
             align-items: center;
-            padding: 1rem;
-            border-radius: 12px;
-            border: none;
-            font-weight: 600;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: var(--font-main);
             font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            border: none;
+            transition: all 0.2s ease;
         }
-        
-        .btn span {
-            position: relative;
-            z-index: 1;
-            transition: all 0.3s ease;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: all 0.5s ease;
-        }
-        
-        .btn:hover::before {
-            left: 100%;
-        }
-        
+
         .btn-primary {
             background-color: var(--primary-blue);
             color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            flex: 1;
+            width: 100%;
         }
-        
+
         .btn-primary:hover {
             background-color: var(--primary-blue-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4);
-        }
-        
-        .btn-primary:active {
-            transform: translateY(0);
         }
 
-        .btn-secondary {
-            background-color: var(--gray-100);
-            color: var(--gray-600);
-            flex: 1;
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--gray-200);
-            transform: translateY(-2px);
-        }
-
-        /* Admin App Container */
-        .app-container {
-            display: none;
-            height: 100vh;
-            width: 100%;
+        /* Admin Dashboard */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
             position: relative;
         }
 
         /* Sidebar */
         .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: var(--sidebar-width);
-            height: 100%;
             background-color: white;
-            box-shadow: var(--shadow-md);
-            z-index: 100;
-            display: none;
-            flex-direction: column;
+            border-right: 1px solid var(--gray-200);
             padding: 1.5rem;
-            transition: transform 0.3s ease;
+            display: none;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
         }
 
         .sidebar-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
             margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
         }
 
         .sidebar-avatar {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background-color: var(--gray-100);
+            background-color: var(--primary-blue);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            font-weight: 600;
             color: white;
-            overflow: hidden;
-        }
-
-        .sidebar-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            font-weight: 600;
+            margin-right: 1rem;
         }
 
         .sidebar-user-info h3 {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
         }
 
         .sidebar-user-info p {
-            font-size: 0.8rem;
-            color: var(--gray-400);
+            font-size: 0.875rem;
+            color: var(--gray-500);
         }
 
         .sidebar-nav {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            flex: 1;
         }
 
         .sidebar-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
             color: var(--gray-600);
             text-decoration: none;
-            position: relative;
+            transition: all 0.2s ease;
         }
 
         .sidebar-item i {
-            font-size: 1.1rem;
-            width: 24px;
+            margin-right: 0.75rem;
+            width: 20px;
             text-align: center;
         }
 
         .sidebar-item:hover {
-            background-color: var(--bg-blue-light);
+            background-color: var(--gray-100);
             color: var(--primary-blue);
         }
 
         .sidebar-item.active {
             background-color: var(--bg-blue-light);
             color: var(--primary-blue);
-            font-weight: 600;
+            font-weight: 500;
         }
 
         .sidebar-footer {
+            margin-top: auto;
             padding-top: 1.5rem;
-            border-top: 1px solid var(--gray-200);
-        }
-
-        .sidebar-footer .sidebar-item {
-            color: #ef4444;
-        }
-
-        .sidebar-footer .sidebar-item:hover {
-            background-color: #fef2f2;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: var(--bottom-nav-height);
-            background-color: white;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-            display: none;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 90;
-        }
-
-        .bottom-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem;
-            color: var(--gray-400);
-            text-decoration: none;
-            font-size: 0.7rem;
-            transition: all 0.3s ease;
-            flex: 1;
-            height: 100%;
-        }
-
-        .bottom-nav-item i {
-            font-size: 1.2rem;
-            margin-bottom: 0.2rem;
-        }
-
-        .bottom-nav-item.active {
-            color: var(--primary-blue);
-        }
-
-        .bottom-nav-item .badge {
-            position: absolute;
-            top: 5px;
-            right: 20%;
-            transform: translateX(50%);
-            background-color: #ef4444;
-            color: white;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        /* Header */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: var(--header-height);
-            background-color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 1.5rem;
-            z-index: 90;
-            box-shadow: var(--shadow-md);
-        }
-
-        .header-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--gray-600);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
-        }
-
-        .header-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .header-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .header-avatar i {
-            font-size: 1rem;
-            color: var(--gray-600);
-        }
-
-        .notification-badge {
-            position: relative;
-            cursor: pointer;
-        }
-
-        .notification-badge i {
-            font-size: 1.3rem;
-            color: var(--gray-600);
-        }
-
-        .badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: #ef4444;
-            color: white;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 600;
         }
 
         /* Main Content */
         .main-content {
-            margin-top: var(--header-height);
-            padding: 1.5rem;
-            height: calc(100vh - var(--header-height));
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: calc(var(--bottom-nav-height) + 1rem);
-        }
-
-        /* Page transition */
-        .page-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Loading state for pages */
-        .page-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            gap: 1rem;
-        }
-
-        .page-loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--gray-200);
-            border-top: 4px solid var(--primary-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .page-loading-text {
-            color: var(--gray-500);
-            font-size: 0.9rem;
-        }
-
-        /* Dashboard Page */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background-color: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-title {
-            font-size: 0.9rem;
-            color: var(--gray-400);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary-blue-dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-change {
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .stat-change.positive {
-            color: var(--primary-blue);
-        }
-
-        .stat-change.negative {
-            color: #ef4444;
-        }
-
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .section-title a {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--primary-blue);
-            text-decoration: none;
-        }
-
-        /* Verification Requests */
-        .requests-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .request-card {
-            background-color: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .request-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .request-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .request-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .request-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            overflow: hidden;
-        }
-
-        .request-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .request-user-info h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 0.2rem;
-        }
-
-        .request-user-info p {
-            font-size: 0.9rem;
-            color: var(--gray-400);
-        }
-
-        .request-status {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .request-status.pending {
-            background-color: #fffbeb;
-            color: #d97706;
-        }
-
-        .request-status.approved {
-            background-color: var(--bg-blue-light);
-            color: var(--primary-blue-dark);
-        }
-
-        .request-status.rejected {
-            background-color: #fef2f2;
-            color: #dc2626;
-        }
-
-        .request-details {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .request-document {
             flex: 1;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--gray-200);
+            padding: 1.5rem;
+            padding-bottom: calc(var(--bottom-nav-height) + 1.5rem);
+            margin-left: 0;
+            transition: margin-left 0.3s ease;
         }
 
-        .request-document img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .request-document-label {
-            padding: 0.8rem;
-            background-color: var(--gray-50);
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--gray-600);
-        }
-
-        .request-message {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: var(--gray-50);
-            border-radius: 12px;
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            line-height: 1.6;
-        }
-
-        .request-actions {
+        .page-header {
             display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        /* Empty State */
-        .empty-state {
-            display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 3rem 1rem;
-            background-color: white;
-            border-radius: 16px;
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 2rem;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            color: var(--gray-300);
             margin-bottom: 1.5rem;
         }
 
-        .empty-state h3 {
-            font-size: 1.2rem;
+        .page-title {
+            font-size: 1.5rem;
             font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 0.5rem;
         }
 
-        .empty-state p {
-            font-size: 0.9rem;
-            color: var(--gray-400);
-            margin-bottom: 1.5rem;
-            max-width: 300px;
-        }
-
-        /* Users Page */
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
+        .card {
             background-color: white;
-            border-radius: 16px;
-            overflow: hidden;
+            border-radius: 12px;
             box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .users-table th, .users-table td {
-            padding: 1rem;
-            text-align: left;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
             border-bottom: 1px solid var(--gray-200);
         }
 
-        .users-table th {
-            background-color: var(--gray-50);
-            color: var(--gray-600);
+        .card-title {
+            font-size: 1.125rem;
             font-weight: 600;
-            font-size: 0.9rem;
         }
 
-        .users-table tr:last-child td {
-            border-bottom: none;
+        .table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .users-table tr:hover {
+        .table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
             background-color: var(--gray-50);
+            font-weight: 500;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-200);
         }
 
-        .user-cell {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            vertical-align: middle;
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
         }
 
         .user-avatar {
@@ -896,254 +346,229 @@
             justify-content: center;
             font-weight: 600;
             color: white;
-            overflow: hidden;
         }
 
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
         }
 
-        .user-info h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 0.2rem;
+        .status-badge.pending {
+            background-color: #fef3c7;
+            color: #92400e;
         }
 
-        .user-info p {
-            font-size: 0.8rem;
-            color: var(--gray-400);
+        .status-badge.verified {
+            background-color: #d1fae5;
+            color: #065f46;
         }
 
-        .user-role {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background-color: var(--bg-blue-light);
-            color: var(--primary-blue-dark);
-        }
-
-        .user-status {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .user-status.verified {
-            background-color: var(--bg-blue-light);
-            color: var(--primary-blue-dark);
-        }
-
-        .user-status.unverified {
-            background-color: #fffbeb;
-            color: #d97706;
-        }
-
-        .user-status.pending {
-            background-color: #f5f3ff;
-            color: #7c3aed;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 0.5rem;
+        .status-badge.unverified {
+            background-color: #fee2e2;
+            color: #991b1b;
         }
 
         .action-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--gray-100);
-            color: var(--gray-600);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
             border: none;
+            transition: all 0.2s ease;
         }
 
-        .action-btn:hover {
+        .action-btn.verify {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+
+        .action-btn.verify:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+        .action-btn.reject {
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            margin-left: 0.5rem;
+        }
+
+        .action-btn.reject:hover {
             background-color: var(--gray-200);
         }
 
-        .action-btn.primary {
-            background-color: var(--bg-blue-light);
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--bottom-nav-height);
+            background-color: white;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            padding: 0.5rem;
+            flex: 1;
+        }
+
+        .nav-item i {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-item.active {
             color: var(--primary-blue);
         }
 
-        .action-btn.primary:hover {
-            background-color: var(--primary-blue-light);
+        /* Responsive */
+        @media (min-width: 768px) {
+            .sidebar {
+                display: block;
+            }
+            .bottom-nav {
+                display: none;
+            }
+            .main-content {
+                margin-left: var(--sidebar-width);
+                padding-bottom: 1.5rem;
+            }
         }
 
-        .action-btn.danger {
-            background-color: #fef2f2;
-            color: #ef4444;
-        }
-
-        .action-btn.danger:hover {
-            background-color: #fee2e2;
-        }
-
-        /* Verification Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal {
-            background-color: white;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: modalFadeIn 0.3s ease-out;
-            box-shadow: var(--shadow-lg);
-        }
-
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .modal-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--gray-600);
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--gray-400);
-            cursor: pointer;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal-footer {
-            padding: 1.5rem;
-            border-top: 1px solid var(--gray-200);
-            display: flex;
-            justify-content: flex-end;
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
             gap: 1rem;
-        }
-
-        .document-preview {
-            display: flex;
-            gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
 
-        .document-item {
-            flex: 1;
+        @media (min-width: 640px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background-color: white;
             border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
         }
 
-        .document-item img {
-            width: 100%;
-            height: 300px;
-            object-fit: contain;
-            background-color: var(--gray-50);
+        .stat-title {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-bottom: 0.5rem;
         }
 
-        .document-label {
-            padding: 0.8rem;
-            background-color: var(--gray-50);
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--gray-600);
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-change i {
+            margin-right: 0.25rem;
+        }
+
+        .stat-change.positive {
+            color: #10b981;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
         }
 
         /* Toast Notifications */
         .toast-container {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 999;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
-            width: 90%;
-            max-width: 400px;
+            gap: 0.5rem;
         }
 
         .toast {
-            background-color: white;
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
-            gap: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: var(--shadow-lg);
+            max-width: 350px;
             animation: slideIn 0.3s ease-out;
-            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        .toast::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--gray-200);
         }
 
-        .toast.hide {
-            animation: slideOut 0.3s ease-out forwards;
+        .toast-success::after {
+            background-color: #10b981;
         }
 
-        @keyframes slideOut {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(20px); opacity: 0; }
+        .toast-error::after {
+            background-color: #ef4444;
+        }
+
+        .toast-info::after {
+            background-color: var(--primary-blue);
         }
 
         .toast-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
+            margin-right: 1rem;
+            font-size: 1.25rem;
         }
 
         .toast-success .toast-icon {
-            background-color: var(--bg-blue-light);
-            color: var(--primary-blue);
+            color: #10b981;
         }
 
         .toast-error .toast-icon {
-            background-color: #fef2f2;
             color: #ef4444;
         }
 
-        .toast-warning .toast-icon {
-            background-color: #fffbeb;
-            color: #f59e0b;
+        .toast-info .toast-icon {
+            color: var(--primary-blue);
         }
 
         .toast-content {
@@ -1151,77 +576,231 @@
         }
 
         .toast-title {
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
         }
 
         .toast-message {
-            font-size: 0.9rem;
-            color: var(--gray-400);
+            font-size: 0.875rem;
+            color: var(--gray-600);
         }
 
         .toast-close {
+            margin-left: 1rem;
             background: none;
             border: none;
             color: var(--gray-400);
-            font-size: 1rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        /* Verification Details Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-500);
+        }
+
+        .verification-images {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .verification-images {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .verification-image-container {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .verification-image-title {
+            padding: 0.75rem;
+            background-color: var(--gray-50);
+            font-weight: 500;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .verification-image {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            background-color: var(--gray-100);
+            padding: 1rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--gray-300);
+        }
+
+        .empty-state h3 {
+            font-size: 1.125rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--gray-700);
+        }
+
+        .empty-state p {
+            font-size: 0.875rem;
+        }
+
+        /* Activity Item */
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: var(--primary-blue);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-message {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background-color: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
         }
 
-        /* Responsive Layout */
-        @media (min-width: 768px) {
-            .app-container {
-                padding-left: var(--sidebar-width);
+        @media (max-width: 767px) {
+            .mobile-menu-toggle {
+                display: flex;
             }
-
+            
             .sidebar {
-                display: flex;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
             }
-
-            .bottom-nav {
-                display: none;
+            
+            .sidebar.open {
+                transform: translateX(0);
             }
-
+            
             .main-content {
-                margin-top: 0;
-                height: 100vh;
-                padding: 2rem;
-                padding-bottom: 2rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .request-details {
-                flex-direction: column;
-            }
-
-            .bottom-nav {
-                display: flex;
-            }
-
-            .main-content {
-                padding-bottom: calc(var(--bottom-nav-height) + 1rem);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .auth-screen {
-                padding: 1.5rem;
-                border-radius: 0;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
+                padding-top: 70px;
             }
         }
     </style>
@@ -1230,178 +809,84 @@
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Loading Admin Portal</div>
+        <div class="loading-text">Loading Admin Dashboard</div>
     </div>
 
     <!-- Auth Screen -->
-    <div class="auth-screen" id="authScreen">
+    <div class="auth-screen" id="authScreen" style="display: none;">
         <div class="auth-logo">
             <i class="fas fa-user-shield"></i>
-            <h1>Food Share Admin</h1>
+            <h1>Admin Portal</h1>
         </div>
 
-        <div class="auth-tabs">
-            <div class="auth-tab active" id="loginTab" onclick="switchTab('login')">Login</div>
-            <div class="auth-tab" id="signupTab" onclick="switchTab('signup')">Create Admin</div>
-            <div class="auth-tab-indicator" id="tabIndicator" style="left: 0; width: 50%;"></div>
-        </div>
-
-        <div class="auth-form-container">
-            <!-- Login Form -->
-            <form class="auth-form" id="loginForm">
-                <div class="input-group">
-                    <label for="loginEmail">Email</label>
-                    <div class="input-field">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="loginEmail" placeholder="Enter your email">
-                    </div>
-                    <div class="error-message" id="loginEmailError">Please enter a valid email</div>
+        <form class="auth-form" id="adminAuthForm">
+            <div class="input-group">
+                <label for="adminAccessCode">Access Code</label>
+                <div class="input-field">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="adminAccessCode" placeholder="Enter access code">
                 </div>
+                <div class="error-message" id="accessCodeError">Incorrect access code</div>
+            </div>
 
-                <div class="input-group">
-                    <label for="loginPassword">Password</label>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="loginPassword" placeholder="Enter your password">
-                    </div>
-                    <div class="error-message" id="loginPasswordError">Password must be at least 6 characters</div>
-                </div>
-
-                <button type="button" class="btn btn-primary" onclick="login()" id="loginBtn">
-                    <span>Login</span>
-                </button>
-            </form>
-
-            <!-- Signup Form -->
-            <form class="auth-form" id="signupForm" style="display: none;">
-                <div class="input-group">
-                    <label for="signupName">Full Name</label>
-                    <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="signupName" placeholder="Enter your full name">
-                    </div>
-                    <div class="error-message" id="signupNameError">Please enter your name</div>
-                </div>
-
-                <div class="input-group">
-                    <label for="signupEmail">Email</label>
-                    <div class="input-field">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="signupEmail" placeholder="Enter your email">
-                    </div>
-                    <div class="error-message" id="signupEmailError">Please enter a valid email</div>
-                </div>
-
-                <div class="input-group">
-                    <label for="signupPassword">Password</label>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="signupPassword" placeholder="Enter your password">
-                    </div>
-                    <div class="error-message" id="signupPasswordError">Password must be at least 6 characters</div>
-                </div>
-
-                <div class="input-group">
-                    <label for="adminCode">Admin Access Code</label>
-                    <div class="input-field">
-                        <i class="fas fa-key"></i>
-                        <input type="password" id="adminCode" placeholder="Enter admin access code">
-                    </div>
-                    <div class="error-message" id="adminCodeError">Invalid admin access code</div>
-                </div>
-
-                <button type="button" class="btn btn-primary" onclick="signup()" id="signupBtn">
-                    <span>Create Admin Account</span>
-                </button>
-            </form>
-        </div>
+            <button type="button" class="btn btn-primary" onclick="verifyAdminAccess()" id="accessBtn">
+                <span>Access Dashboard</span>
+            </button>
+        </form>
     </div>
 
-    <!-- Admin App Container -->
-    <div class="app-container" id="appContainer">
+    <!-- Admin Dashboard -->
+    <div class="admin-container" id="adminContainer" style="display: none;">
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-avatar" id="sidebarAvatar">
-                    <span id="sidebarAvatarInitial">A</span>
-                    <img id="sidebarAvatarImage" style="display: none;">
+                    <i class="fas fa-user-shield"></i>
                 </div>
                 <div class="sidebar-user-info">
-                    <h3 id="sidebarUserName">Admin Name</h3>
-                    <p id="sidebarUserStatus">Administrator</p>
+                    <h3>Admin</h3>
+                    <p>Food Share</p>
                 </div>
             </div>
 
             <div class="sidebar-nav">
-                <a href="#" class="sidebar-item active" onclick="showPage('dashboard')">
+                <a href="#" class="sidebar-item active" onclick="showAdminPage('dashboard')">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="sidebar-item" onclick="showPage('verifications')">
-                    <i class="fas fa-user-check"></i>
-                    <span>Verifications</span>
-                    <span class="badge" id="verificationBadge" style="display: none;">0</span>
-                </a>
-                <a href="#" class="sidebar-item" onclick="showPage('users')">
+                <a href="#" class="sidebar-item" onclick="showAdminPage('users')">
                     <i class="fas fa-users"></i>
                     <span>Users</span>
                 </a>
-                <a href="#" class="sidebar-item" onclick="showPage('settings')">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                <a href="#" class="sidebar-item" onclick="showAdminPage('verifications')">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Verifications</span>
+                </a>
+                <a href="#" class="sidebar-item" onclick="showAdminPage('listings')">
+                    <i class="fas fa-utensils"></i>
+                    <span>Listings</span>
                 </a>
             </div>
 
             <div class="sidebar-footer">
-                <a href="#" class="sidebar-item" onclick="logout()">
+                <a href="#" class="sidebar-item" onclick="logoutAdmin()">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
             </div>
         </div>
 
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav" id="bottomNav">
-            <a href="#" class="bottom-nav-item active" onclick="showPage('dashboard')">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#" class="bottom-nav-item" onclick="showPage('verifications')">
-                <i class="fas fa-user-check"></i>
-                <span>Verifications</span>
-                <span class="badge" id="mobileVerificationBadge" style="display: none;">0</span>
-            </a>
-            <a href="#" class="bottom-nav-item" onclick="showPage('users')">
-                <i class="fas fa-users"></i>
-                <span>Users</span>
-            </a>
-            <a href="#" class="bottom-nav-item" onclick="showPage('settings')">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-        </div>
-
-        <!-- Header -->
-        <div class="header">
-            <h1 class="header-title" id="headerTitle">Dashboard</h1>
-            <div class="header-actions">
-                <div class="notification-badge">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge" id="notificationBadge" style="display: none;">0</span>
-                </div>
-                <div class="header-avatar" id="headerAvatar">
-                    <span id="headerAvatarInitial">A</span>
-                    <img id="headerAvatarImage" style="display: none;">
-                </div>
-            </div>
-        </div>
-
         <!-- Main Content -->
-        <div class="main-content" id="mainContent">
-            <!-- Dashboard Page Content -->
+        <div class="main-content">
+            <!-- Dashboard Page -->
             <div class="page-content" id="dashboardPage">
-                <div class="section-title">
-                    <h2>Admin Dashboard</h2>
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
                 </div>
 
                 <div class="stats-grid">
@@ -1410,190 +895,188 @@
                         <h2 class="stat-value" id="totalUsers">0</h2>
                         <p class="stat-change positive">
                             <i class="fas fa-arrow-up"></i>
-                            <span>0% from last month</span>
+                            <span>0% from last week</span>
+                        </p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-title">Active Listings</p>
+                        <h2 class="stat-value" id="activeListingsCount">0</h2>
+                        <p class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>0% from last week</span>
                         </p>
                     </div>
                     <div class="stat-card">
                         <p class="stat-title">Pending Verifications</p>
                         <h2 class="stat-value" id="pendingVerifications">0</h2>
-                        <p class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>0 from yesterday</span>
-                        </p>
-                    </div>
-                    <div class="stat-card">
-                        <p class="stat-title">Verified Users</p>
-                        <h2 class="stat-value" id="verifiedUsers">0</h2>
-                        <p class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>0% from last month</span>
-                        </p>
-                    </div>
-                    <div class="stat-card">
-                        <p class="stat-title">Active Listings</p>
-                        <h2 class="stat-value" id="activeListings">0</h2>
                         <p class="stat-change negative">
                             <i class="fas fa-arrow-down"></i>
                             <span>0 from yesterday</span>
                         </p>
                     </div>
+                    <div class="stat-card">
+                        <p class="stat-title">Completed Requests</p>
+                        <h2 class="stat-value" id="completedRequests">0</h2>
+                        <p class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>0% from last week</span>
+                        </p>
+                    </div>
                 </div>
 
-                <div class="section-title" style="margin-top: 2rem;">
-                    <h2>Recent Verification Requests</h2>
-                    <a href="#" onclick="showPage('verifications')">View All</a>
-                </div>
-
-                <div class="requests-list" id="recentRequests">
-                    <div class="page-loading">
-                        <div class="page-loading-spinner"></div>
-                        <div class="page-loading-text">Loading verification requests...</div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Activity</h2>
+                    </div>
+                    <div id="recentActivity">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <h3>No recent activity</h3>
+                            <p>Activity will appear here</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Verifications Page Content -->
-            <div class="page-content" id="verificationsPage" style="display: none;">
-                <div class="section-title">
-                    <h2>Verification Requests</h2>
-                    <div class="request-actions">
-                        <button class="btn btn-secondary" onclick="filterVerifications('all')">All</button>
-                        <button class="btn btn-secondary" onclick="filterVerifications('pending')">Pending</button>
-                        <button class="btn btn-secondary" onclick="filterVerifications('approved')">Approved</button>
-                        <button class="btn btn-secondary" onclick="filterVerifications('rejected')">Rejected</button>
-                    </div>
-                </div>
-
-                <div class="requests-list" id="verificationRequests">
-                    <div class="page-loading">
-                        <div class="page-loading-spinner"></div>
-                        <div class="page-loading-text">Loading verification requests...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Users Page Content -->
+            <!-- Users Page -->
             <div class="page-content" id="usersPage" style="display: none;">
-                <div class="section-title">
-                    <h2>User Management</h2>
-                    <div class="request-actions">
-                        <button class="btn btn-secondary" onclick="filterUsers('all')">All</button>
-                        <button class="btn btn-secondary" onclick="filterUsers('verified')">Verified</button>
-                        <button class="btn btn-secondary" onclick="filterUsers('unverified')">Unverified</button>
-                        <button class="btn btn-secondary" onclick="filterUsers('donor')">Donors</button>
-                        <button class="btn btn-secondary" onclick="filterUsers('receiver')">Receivers</button>
-                    </div>
+                <div class="page-header">
+                    <h1 class="page-title">Users</h1>
                 </div>
 
-                <div id="usersContent">
-                    <div class="page-loading">
-                        <div class="page-loading-spinner"></div>
-                        <div class="page-loading-text">Loading users...</div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">All Users</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">
+                                        <div class="empty-state">
+                                            <i class="fas fa-users"></i>
+                                            <h3>No users found</h3>
+                                            <p>Users will appear here</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Settings Page Content -->
-            <div class="page-content" id="settingsPage" style="display: none;">
-                <div class="section-title">
-                    <h2>Admin Settings</h2>
+            <!-- Verifications Page -->
+            <div class="page-content" id="verificationsPage" style="display: none;">
+                <div class="page-header">
+                    <h1 class="page-title">Verifications</h1>
                 </div>
 
-                <div class="stat-card">
-                    <h3>Account Information</h3>
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label for="settingsName">Full Name</label>
-                        <div class="input-field">
-                            <i class="fas fa-user"></i>
-                            <input type="text" id="settingsName" placeholder="Enter your full name">
-                        </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Pending Verifications</h2>
                     </div>
-
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label for="settingsEmail">Email</label>
-                        <div class="input-field">
-                            <i class="fas fa-envelope"></i>
-                            <input type="email" id="settingsEmail" placeholder="Enter your email" disabled>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="verificationsTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">
+                                        <div class="empty-state">
+                                            <i class="fas fa-check-circle"></i>
+                                            <h3>No pending verifications</h3>
+                                            <p>Verification requests will appear here</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
-                    <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="updateAdminProfile()">
-                        <span>Update Profile</span>
-                    </button>
+            <!-- Listings Page -->
+            <div class="page-content" id="listingsPage" style="display: none;">
+                <div class="page-header">
+                    <h1 class="page-title">Listings</h1>
                 </div>
 
-                <div class="stat-card" style="margin-top: 1.5rem;">
-                    <h3>Change Password</h3>
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label for="currentPassword">Current Password</label>
-                        <div class="input-field">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" id="currentPassword" placeholder="Enter current password">
-                        </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">All Listings</h2>
                     </div>
-
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label for="newPassword">New Password</label>
-                        <div class="input-field">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" id="newPassword" placeholder="Enter new password">
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Food Item</th>
+                                    <th>Donor</th>
+                                    <th>Status</th>
+                                    <th>Expires</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listingsTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">
+                                        <div class="empty-state">
+                                            <i class="fas fa-utensils"></i>
+                                            <h3>No listings found</h3>
+                                            <p>Listings will appear here</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label for="confirmPassword">Confirm New Password</label>
-                        <div class="input-field">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" id="confirmPassword" placeholder="Confirm new password">
-                        </div>
-                    </div>
-
-                    <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="changeAdminPassword()">
-                        <span>Change Password</span>
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Verification Modal -->
-    <div class="modal-overlay" id="verificationModal">
-        <div class="modal">
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav" id="bottomNav">
+        <a href="#" class="nav-item active" onclick="showAdminPage('dashboard')">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showAdminPage('users')">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showAdminPage('verifications')">
+            <i class="fas fa-check-circle"></i>
+            <span>Verify</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showAdminPage('listings')">
+            <i class="fas fa-utensils"></i>
+            <span>Listings</span>
+        </a>
+    </div>
+
+    <!-- Verification Details Modal -->
+    <div class="modal-overlay" id="verificationDetailsModal">
+        <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Verification Request</h2>
-                <button class="modal-close" onclick="hideModal('verificationModal')">&times;</button>
+                <h2 class="modal-title">Verification Details</h2>
+                <button class="modal-close" onclick="hideModal('verificationDetailsModal')">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="request-user">
-                    <div class="request-avatar" id="modalUserAvatar">
-                        <span id="modalUserAvatarInitial">U</span>
-                        <img id="modalUserAvatarImage" style="display: none;">
-                    </div>
-                    <div class="request-user-info">
-                        <h3 id="modalUserName">User Name</h3>
-                        <p id="modalUserEmail">user@example.com</p>
-                    </div>
-                </div>
-
-                <div class="request-message" id="modalUserMessage">
-                    No additional message provided.
-                </div>
-
-                <div class="document-preview">
-                    <div class="document-item">
-                        <img id="modalIdImage" src="https://via.placeholder.com/300x200?text=No+Image">
-                        <div class="document-label">Identification Document</div>
-                    </div>
-                    <div class="document-item">
-                        <img id="modalAddressImage" src="https://via.placeholder.com/300x200?text=No+Image">
-                        <div class="document-label">Proof of Address</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideModal('verificationModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="approveVerification()" id="approveBtn">Approve</button>
-                <button class="btn btn-secondary" style="background-color: #fef2f2; color: #ef4444;" onclick="rejectVerification()" id="rejectBtn">Reject</button>
+            <div id="verificationDetailsContent">
+                <!-- Content will be loaded dynamically -->
             </div>
         </div>
     </div>
@@ -1602,7 +1085,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // Firebase configuration
+        // Firebase configuration (same as main app)
         const firebaseConfig = {
             apiKey: "AIzaSyANq9cJd9tpTnbfMIY8ImsxWFWsn9prXbI",
             authDomain: "mealswap-15d15.firebaseapp.com",
@@ -1615,381 +1098,310 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage();
 
-        // Admin access code (should be more secure in production)
-        const ADMIN_ACCESS_CODE = "FOODSHARE2025";
+        // Admin access code
+        const ADMIN_ACCESS_CODE = "ADMIN124";
 
         // Global variables
-        let currentUser = null;
-        let userData = null;
-        let currentPage = 'dashboard';
-        let verificationRequests = [];
+        let adminAuthenticated = false;
         let users = [];
-        let selectedVerificationId = null;
-        let selectedUserId = null;
-        let currentVerificationFilter = 'pending';
-        let currentUserFilter = 'all';
+        let verifications = [];
+        let listings = [];
+        let activityListener;
+        let usersListener;
+        let verificationsListener;
+        let listingsListener;
 
         // DOM Elements
         const loadingScreen = document.getElementById('loadingScreen');
         const authScreen = document.getElementById('authScreen');
-        const appContainer = document.getElementById('appContainer');
-        const sidebar = document.getElementById('sidebar');
+        const adminContainer = document.getElementById('adminContainer');
+        const accessCodeInput = document.getElementById('adminAccessCode');
+        const accessCodeError = document.getElementById('accessCodeError');
+        const accessBtn = document.getElementById('accessBtn');
         const bottomNav = document.getElementById('bottomNav');
-        const headerTitle = document.getElementById('headerTitle');
-        const mainContent = document.getElementById('mainContent');
-        const dashboardPage = document.getElementById('dashboardPage');
-        const verificationsPage = document.getElementById('verificationsPage');
-        const usersPage = document.getElementById('usersPage');
-        const settingsPage = document.getElementById('settingsPage');
-        const totalUsers = document.getElementById('totalUsers');
-        const pendingVerifications = document.getElementById('pendingVerifications');
-        const verifiedUsers = document.getElementById('verifiedUsers');
-        const activeListings = document.getElementById('activeListings');
-        const recentRequests = document.getElementById('recentRequests');
-        const verificationRequestsList = document.getElementById('verificationRequests');
-        const usersContent = document.getElementById('usersContent');
-        const verificationBadge = document.getElementById('verificationBadge');
-        const mobileVerificationBadge = document.getElementById('mobileVerificationBadge');
-        const notificationBadge = document.getElementById('notificationBadge');
-        const sidebarAvatar = document.getElementById('sidebarAvatar');
-        const sidebarAvatarInitial = document.getElementById('sidebarAvatarInitial');
-        const sidebarAvatarImage = document.getElementById('sidebarAvatarImage');
-        const sidebarUserName = document.getElementById('sidebarUserName');
-        const headerAvatar = document.getElementById('headerAvatar');
-        const headerAvatarInitial = document.getElementById('headerAvatarInitial');
-        const headerAvatarImage = document.getElementById('headerAvatarImage');
-        const verificationModal = document.getElementById('verificationModal');
-        const modalUserName = document.getElementById('modalUserName');
-        const modalUserEmail = document.getElementById('modalUserEmail');
-        const modalUserMessage = document.getElementById('modalUserMessage');
-        const modalUserAvatar = document.getElementById('modalUserAvatar');
-        const modalUserAvatarInitial = document.getElementById('modalUserAvatarInitial');
-        const modalUserAvatarImage = document.getElementById('modalUserAvatarImage');
-        const modalIdImage = document.getElementById('modalIdImage');
-        const modalAddressImage = document.getElementById('modalAddressImage');
-        const approveBtn = document.getElementById('approveBtn');
-        const rejectBtn = document.getElementById('rejectBtn');
-        const toastContainer = document.getElementById('toastContainer');
-        const settingsName = document.getElementById('settingsName');
-        const settingsEmail = document.getElementById('settingsEmail');
+        const sidebar = document.getElementById('sidebar');
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+
+        // Page elements
+        const totalUsersEl = document.getElementById('totalUsers');
+        const activeListingsCountEl = document.getElementById('activeListingsCount');
+        const pendingVerificationsEl = document.getElementById('pendingVerifications');
+        const completedRequestsEl = document.getElementById('completedRequests');
+        const usersTableBody = document.getElementById('usersTableBody');
+        const verificationsTableBody = document.getElementById('verificationsTableBody');
+        const listingsTableBody = document.getElementById('listingsTableBody');
+        const recentActivityEl = document.getElementById('recentActivity');
+        const verificationDetailsModal = document.getElementById('verificationDetailsModal');
+        const verificationDetailsContent = document.getElementById('verificationDetailsContent');
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuthState();
+            checkAdminAuth();
             setupEventListeners();
         });
 
         function setupEventListeners() {
-            // Add event listeners for input fields to remove error state on focus
-            document.querySelectorAll('input').forEach(input => {
-                input.addEventListener('focus', function() {
-                    const parent = this.closest('.input-field');
-                    if (parent) parent.classList.remove('error');
-                    
-                    const errorElement = this.closest('.input-group')?.querySelector('.error-message');
-                    if (errorElement) errorElement.style.display = 'none';
-                });
+            // Mobile menu toggle
+            mobileMenuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
             });
-        }
-
-        function checkAuthState() {
-            loadingScreen.style.display = 'flex';
             
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    // User is signed in
-                    currentUser = user;
-                    await fetchUserData();
-                    
-                    // Check if user is admin
-                    if (userData && userData.role === 'admin') {
-                        showApp();
-                    } else {
-                        // Not an admin, sign out
-                        await auth.signOut();
-                        showToast('Access denied. Admin privileges required.', 'error');
-                        showAuthScreen();
-                    }
-                } else {
-                    // No user is signed in
-                    showAuthScreen();
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 767 && !sidebar.contains(event.target) && 
+                    event.target !== mobileMenuToggle) {
+                    sidebar.classList.remove('open');
                 }
             });
         }
-
-        async function fetchUserData() {
-            try {
-                const userDoc = await db.collection('admins').doc(currentUser.uid).get();
-                if (userDoc.exists) {
-                    userData = userDoc.data();
-                    updateUserInterface();
-                    
-                    // Load settings data
-                    if (settingsName) settingsName.value = userData.name || '';
-                    if (settingsEmail) settingsEmail.value = currentUser.email || '';
-                } else {
-                    // User is not an admin
-                    await auth.signOut();
-                    showToast('Access denied. Admin privileges required.', 'error');
-                    showAuthScreen();
-                }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                showToast('Error loading user data', 'error');
-                loadingScreen.style.display = 'none';
+        function checkAdminAuth() {
+            // Check if admin is authenticated (in a real app, this would be more secure)
+            if (sessionStorage.getItem('adminAuthenticated') === 'true') {
+                adminAuthenticated = true;
+                showAdminDashboard();
+            } else {
+                showAuthScreen();
             }
         }
 
-        function updateUserInterface() {
-            // Update user name
-            sidebarUserName.textContent = userData.name || 'Admin';
-            sidebarAvatarInitial.textContent = userData.name ? userData.name.charAt(0).toUpperCase() : 'A';
-            headerAvatarInitial.textContent = userData.name ? userData.name.charAt(0).toUpperCase() : 'A';
+        function verifyAdminAccess() {
+            const accessCode = accessCodeInput.value.trim();
             
-            // Show the appropriate page
-            showPage(currentPage);
+            if (!accessCode) {
+                accessCodeError.textContent = 'Please enter access code';
+                accessCodeError.style.display = 'block';
+                return;
+            }
             
-            // Set up real-time listeners
-            setupRealtimeListeners();
+            if (accessCode !== ADMIN_ACCESS_CODE) {
+                accessCodeError.textContent = 'Incorrect access code';
+                accessCodeError.style.display = 'block';
+                return;
+            }
+            
+            // Show loading state
+            accessBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i><span>Verifying...</span>';
+            
+            // Simulate verification (in a real app, this would be server-side)
+            setTimeout(() => {
+                adminAuthenticated = true;
+                sessionStorage.setItem('adminAuthenticated', 'true');
+                showAdminDashboard();
+                
+                // Reset button
+                accessBtn.innerHTML = '<span>Access Dashboard</span>';
+            }, 1000);
+        }
+
+        function showAuthScreen() {
+            loadingScreen.style.display = 'none';
+            authScreen.style.display = 'flex';
+            adminContainer.style.display = 'none';
+            bottomNav.style.display = 'none';
+        }
+
+        function showAdminDashboard() {
+            loadingScreen.style.display = 'none';
+            authScreen.style.display = 'none';
+            adminContainer.style.display = 'flex';
+            
+            // Show bottom nav only on mobile
+            if (window.innerWidth <= 767) {
+                bottomNav.style.display = 'flex';
+            } else {
+                bottomNav.style.display = 'none';
+            }
+            
+            // Load initial data
+            loadAdminData();
+            showAdminPage('dashboard');
+        }
+
+        function showAdminPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Show selected page
+            document.getElementById(`${page}Page`).style.display = 'block';
+            
+            // Update navigation state
+            updateAdminNavState(page);
+            
+            // Load data for the page if needed
+            if (page === 'users' && users.length === 0) {
+                loadUsers();
+            } else if (page === 'verifications' && verifications.length === 0) {
+                loadVerifications();
+            } else if (page === 'listings' && listings.length === 0) {
+                loadListings();
+            }
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 767) {
+                sidebar.classList.remove('open');
+            }
+        }
+
+        function updateAdminNavState(page) {
+            // Update sidebar items
+            document.querySelectorAll('.sidebar-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            document.querySelector(`.sidebar-item[onclick="showAdminPage('${page}')"]`).classList.add('active');
+            
+            // Update bottom nav items
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            document.querySelector(`.nav-item[onclick="showAdminPage('${page}')"]`).classList.add('active');
+        }
+
+        async function loadAdminData() {
+            try {
+                // Load stats
+                const usersSnapshot = await db.collection('users').get();
+                const listingsSnapshot = await db.collection('listings').where('status', '==', 'available').get();
+                const verificationsSnapshot = await db.collection('verificationRequests').where('status', '==', 'pending').get();
+                
+                // Update stats
+                totalUsersEl.textContent = usersSnapshot.size;
+                activeListingsCountEl.textContent = listingsSnapshot.size;
+                pendingVerificationsEl.textContent = verificationsSnapshot.size;
+                
+                // Set up real-time listeners
+                setupRealtimeListeners();
+                
+            } catch (error) {
+                console.error('Error loading admin data:', error);
+                showToast('Error loading admin data', 'error');
+            }
         }
 
         function setupRealtimeListeners() {
-            // Listen for verification requests
-            db.collection('verifications')
-                .where('status', '==', 'pending')
-                .orderBy('createdAt', 'desc')
-                .onSnapshot((snapshot) => {
-                    verificationRequests = [];
+            // Clean up existing listeners if any
+            if (activityListener) activityListener();
+            if (usersListener) usersListener();
+            if (verificationsListener) verificationsListener();
+            if (listingsListener) listingsListener();
+            
+            // Users listener
+            usersListener = db.collection('users').onSnapshot(snapshot => {
+                totalUsersEl.textContent = snapshot.size;
+            });
+            
+            // Listings listener
+            listingsListener = db.collection('listings').where('status', '==', 'available').onSnapshot(snapshot => {
+                activeListingsCountEl.textContent = snapshot.size;
+            });
+            
+            // Verifications listener
+            verificationsListener = db.collection('verificationRequests').where('status', '==', 'pending').onSnapshot(snapshot => {
+                pendingVerificationsEl.textContent = snapshot.size;
+            });
+            
+            // Activity listener
+            activityListener = db.collection('adminActivities')
+                .orderBy('timestamp', 'desc')
+                .limit(10)
+                .onSnapshot(snapshot => {
+                    const activities = [];
                     snapshot.forEach(doc => {
-                        verificationRequests.push({ id: doc.id, ...doc.data() });
+                        activities.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
                     });
-                    
-                    // Update counts
-                    pendingVerifications.textContent = verificationRequests.length;
-                    
-                    // Update badges
-                    if (verificationRequests.length > 0) {
-                        verificationBadge.textContent = verificationRequests.length;
-                        verificationBadge.style.display = 'flex';
-                        mobileVerificationBadge.textContent = verificationRequests.length;
-                        mobileVerificationBadge.style.display = 'flex';
-                        notificationBadge.textContent = verificationRequests.length;
-                        notificationBadge.style.display = 'flex';
-                    } else {
-                        verificationBadge.style.display = 'none';
-                        mobileVerificationBadge.style.display = 'none';
-                        notificationBadge.style.display = 'none';
-                    }
-                    
-                    // Render requests
-                    renderVerificationRequests();
-                    renderRecentVerificationRequests();
+                    renderRecentActivity(activities);
+                });
+        }
+
+        async function loadUsers() {
+            try {
+                const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+                users = [];
+                snapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
                 });
                 
-            // Listen for all users
-            db.collection('users')
-                .orderBy('createdAt', 'desc')
-                .onSnapshot((snapshot) => {
+                renderUsersTable();
+                
+                // Set up real-time listener for users
+                usersListener = db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
                     users = [];
-                    let verifiedCount = 0;
-                    
                     snapshot.forEach(doc => {
-                        const user = { id: doc.id, ...doc.data() };
-                        users.push(user);
-                        
-                        if (user.verified) {
-                            verifiedCount++;
-                        }
+                        users.push({ id: doc.id, ...doc.data() });
                     });
-                    
-                    // Update counts
-                    totalUsers.textContent = users.length;
-                    verifiedUsers.textContent = verifiedCount;
-                    
-                    // Render users
-                    renderUsers();
+                    renderUsersTable();
                 });
                 
-            // Listen for listings count
-            db.collection('listings')
-                .where('status', '==', 'available')
-                .onSnapshot((snapshot) => {
-                    activeListings.textContent = snapshot.size;
-                });
-        }
-
-        function renderVerificationRequests() {
-            if (verificationRequests.length === 0) {
-                verificationRequestsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-user-check"></i>
-                        <h3>No Pending Verifications</h3>
-                        <p>When users submit verification requests, they'll appear here.</p>
-                    </div>
-                `;
-                return;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('Error loading users', 'error');
             }
-            
-            verificationRequestsList.innerHTML = '';
-            
-            verificationRequests.forEach(request => {
-                const requestElement = document.createElement('div');
-                requestElement.className = 'request-card';
-                requestElement.innerHTML = `
-                    <div class="request-header">
-                        <div class="request-user">
-                            <div class="request-avatar">
-                                <span>${request.userName ? request.userName.charAt(0).toUpperCase() : 'U'}</span>
-                            </div>
-                            <div class="request-user-info">
-                                <h3>${request.userName || 'Unknown User'}</h3>
-                                <p>${request.userEmail || 'No email'}</p>
-                            </div>
-                        </div>
-                        <div class="request-status pending">Pending</div>
-                    </div>
-                    <div class="request-message">
-                        ${request.message || 'No additional message provided.'}
-                    </div>
-                    <div class="request-actions">
-                        <button class="btn btn-secondary" onclick="viewVerification('${request.id}')">
-                            <i class="fas fa-eye" style="margin-right: 8px;"></i>
-                            <span>Review</span>
-                        </button>
-                    </div>
-                `;
-                
-                verificationRequestsList.appendChild(requestElement);
-            });
         }
 
-        function renderRecentVerificationRequests() {
-            if (verificationRequests.length === 0) {
-                recentRequests.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-user-check"></i>
-                        <h3>No Recent Verifications</h3>
-                        <p>When users submit verification requests, they'll appear here.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Show only the 3 most recent requests
-            const recent = verificationRequests.slice(0, 3);
-            
-            recentRequests.innerHTML = '';
-            
-            recent.forEach(request => {
-                const requestElement = document.createElement('div');
-                requestElement.className = 'request-card';
-                requestElement.innerHTML = `
-                    <div class="request-header">
-                        <div class="request-user">
-                            <div class="request-avatar">
-                                <span>${request.userName ? request.userName.charAt(0).toUpperCase() : 'U'}</span>
-                            </div>
-                            <div class="request-user-info">
-                                <h3>${request.userName || 'Unknown User'}</h3>
-                                <p>${request.userEmail || 'No email'}</p>
-                            </div>
-                        </div>
-                        <div class="request-status pending">Pending</div>
-                    </div>
-                    <div class="request-actions">
-                        <button class="btn btn-secondary" onclick="viewVerification('${request.id}')" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                            <i class="fas fa-eye" style="margin-right: 5px;"></i>
-                            <span>Review</span>
-                        </button>
-                    </div>
-                `;
-                
-                recentRequests.appendChild(requestElement);
-            });
-        }
-
-        function renderUsers() {
+        function renderUsersTable() {
             if (users.length === 0) {
-                usersContent.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <h3>No Users Found</h3>
-                        <p>When users register, they'll appear here.</p>
-                    </div>
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center;">
+                            <div class="empty-state">
+                                <i class="fas fa-users"></i>
+                                <h3>No users found</h3>
+                                <p>Users will appear here</p>
+                            </div>
+                        </td>
+                    </tr>
                 `;
                 return;
             }
             
-            usersContent.innerHTML = `
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody"></tbody>
-                </table>
-            `;
-            
-            const usersTableBody = document.getElementById('usersTableBody');
+            usersTableBody.innerHTML = '';
             
             users.forEach(user => {
-                // Apply filters
-                if (currentUserFilter === 'verified' && !user.verified) return;
-                if (currentUserFilter === 'unverified' && user.verified) return;
-                if (currentUserFilter === 'donor' && user.role !== 'donor') return;
-                if (currentUserFilter === 'receiver' && user.role !== 'receiver') return;
+                // Format createdAt date
+                const createdAt = user.createdAt?.toDate() || new Date();
+                const formattedDate = createdAt.toLocaleDateString();
+                
+                // Get initials for avatar
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'U';
                 
                 const userRow = document.createElement('tr');
                 
-                // Determine status
-                let statusClass = 'unverified';
-                let statusText = 'Unverified';
-                
-                if (user.verified) {
-                    statusClass = 'verified';
-                    statusText = 'Verified';
-                } else if (user.verificationStatus === 'pending') {
-                    statusClass = 'pending';
-                    statusText = 'Pending';
-                }
-                
                 userRow.innerHTML = `
                     <td>
-                        <div class="user-cell">
-                            <div class="user-avatar">
-                                <span>${user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="user-avatar" style="background-color: ${getRandomColor()}">
+                                ${initials}
                             </div>
-                            <div class="user-info">
-                                <h4>${user.name || 'Unknown User'}</h4>
-                                <p>${user.email || 'No email'}</p>
+                            <div>
+                                <h4 style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${user.name || 'Unknown'}</h4>
+                                <p style="font-size: 0.75rem; color: var(--gray-500);">${user.email}</p>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <span class="user-role">${user.role === 'donor' ? 'Donor' : 'Receiver'}</span>
+                        <span style="text-transform: capitalize;">${user.role || 'unknown'}</span>
                     </td>
                     <td>
-                        <span class="user-status ${statusClass}">${statusText}</span>
+                        ${user.verified 
+                            ? '<span class="status-badge verified">Verified</span>' 
+                            : user.verificationStatus === 'pending' 
+                                ? '<span class="status-badge pending">Pending</span>' 
+                                : '<span class="status-badge unverified">Unverified</span>'}
                     </td>
                     <td>
-                        <div class="user-actions">
-                            <button class="action-btn primary" onclick="viewUser('${user.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="action-btn" onclick="editUser('${user.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn danger" onclick="deleteUser('${user.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                        ${!user.verified && user.verificationStatus === 'pending' 
+                            ? `<button class="action-btn verify" onclick="verifyUser('${user.id}')">Verify</button>
+                               <button class="action-btn reject" onclick="rejectVerificationForUser('${user.id}')">Reject</button>`
+                            : ''}
                     </td>
                 `;
                 
@@ -1997,539 +1409,542 @@
             });
         }
 
-        function filterVerifications(filter) {
-            currentVerificationFilter = filter;
-            // In a real app, this would fetch filtered verifications from Firestore
-            showToast(`Showing ${filter} verifications`, 'info');
-            // For now, we'll just show a message
-        }
-
-        function filterUsers(filter) {
-            currentUserFilter = filter;
-            renderUsers();
-        }
-
-        function viewVerification(verificationId) {
-            const verification = verificationRequests.find(v => v.id === verificationId);
-            if (!verification) return;
-            
-            selectedVerificationId = verificationId;
-            
-            // Update modal content
-            modalUserName.textContent = verification.userName || 'Unknown User';
-            modalUserEmail.textContent = verification.userEmail || 'No email';
-            modalUserMessage.textContent = verification.message || 'No additional message provided.';
-            
-            // Set avatar
-            modalUserAvatarInitial.textContent = verification.userName ? verification.userName.charAt(0).toUpperCase() : 'U';
-            modalUserAvatarInitial.style.display = 'flex';
-            modalUserAvatarImage.style.display = 'none';
-            
-            // Set document images
-            modalIdImage.src = verification.idImageUrl || 'https://via.placeholder.com/300x200?text=No+Image';
-            modalAddressImage.src = verification.addressImageUrl || 'https://via.placeholder.com/300x200?text=No+Image';
-            
-            // Show modal
-            verificationModal.style.display = 'flex';
-        }
-
-        async function approveVerification() {
+        async function loadVerifications() {
             try {
-                if (!selectedVerificationId) return;
+                const snapshot = await db.collection('verificationRequests')
+                    .where('status', '==', 'pending')
+                    .orderBy('submittedAt', 'desc')
+                    .get();
                 
-                // Show loading state
-                approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i><span>Approving...</span>';
-                rejectBtn.disabled = true;
-                
-                const verification = verificationRequests.find(v => v.id === selectedVerificationId);
-                if (!verification) return;
-                
-                // Update verification status
-                await db.collection('verifications').doc(selectedVerificationId).update({
-                    status: 'approved',
-                    reviewedBy: currentUser.uid,
-                    reviewedByName: userData.name,
-                    reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+                verifications = [];
+                snapshot.forEach(doc => {
+                    verifications.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Update user verification status
-                await db.collection('users').doc(verification.userId).update({
+                renderVerificationsTable();
+                
+                // Set up real-time listener for verifications
+                verificationsListener = db.collection('verificationRequests')
+                    .where('status', '==', 'pending')
+                    .orderBy('submittedAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        verifications = [];
+                        snapshot.forEach(doc => {
+                            verifications.push({ id: doc.id, ...doc.data() });
+                        });
+                        renderVerificationsTable();
+                    });
+                
+            } catch (error) {
+                console.error('Error loading verifications:', error);
+                showToast('Error loading verifications', 'error');
+            }
+        }
+
+        function renderVerificationsTable() {
+            if (verifications.length === 0) {
+                verificationsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center;">
+                            <div class="empty-state">
+                                <i class="fas fa-check-circle"></i>
+                                <h3>No pending verifications</h3>
+                                <p>Verification requests will appear here</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            verificationsTableBody.innerHTML = '';
+            
+            verifications.forEach(verification => {
+                // Format submittedAt date
+                const submittedAt = verification.submittedAt?.toDate() || new Date();
+                const formattedDate = submittedAt.toLocaleDateString();
+                
+                const verificationRow = document.createElement('tr');
+                
+                verificationRow.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="user-avatar" style="background-color: ${getRandomColor()}">
+                                ${verification.userName ? verification.userName.substring(0, 1) : 'U'}
+                            </div>
+                            <div>
+                                <h4 style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${verification.userName || 'Unknown'}</h4>
+                                <p style="font-size: 0.75rem; color: var(--gray-500);">${verification.userEmail}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <span class="status-badge pending">Pending</span>
+                    </td>
+                    <td>
+                        <button class="action-btn verify" onclick="viewVerificationDetails('${verification.id}')">View</button>
+                    </td>
+                `;
+                
+                verificationsTableBody.appendChild(verificationRow);
+            });
+        }
+
+        async function viewVerificationDetails(verificationId) {
+            try {
+                const doc = await db.collection('verificationRequests').doc(verificationId).get();
+                if (!doc.exists) {
+                    showToast('Verification request not found', 'error');
+                    return;
+                }
+                
+                const verification = doc.data();
+                const submittedAt = verification.submittedAt?.toDate() || new Date();
+                const formattedDate = submittedAt.toLocaleDateString();
+                
+                verificationDetailsContent.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">User Information</h2>
+                        </div>
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="user-avatar" style="background-color: ${getRandomColor()}">
+                                    ${verification.userName ? verification.userName.substring(0, 1) : 'U'}
+                                </div>
+                                <div>
+                                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem;">${verification.userName || 'Unknown'}</h3>
+                                    <p style="font-size: 0.875rem; color: var(--gray-500);">${verification.userEmail}</p>
+                                </div>
+                            </div>
+                            <p style="margin-bottom: 0.5rem;"><strong>Submitted:</strong> ${formattedDate}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="verification-images">
+                        <div class="verification-image-container">
+                            <div class="verification-image-title">ID Document</div>
+                            <img src="${verification.idImageUrl}" class="verification-image" alt="ID Document">
+                        </div>
+                        <div class="verification-image-container">
+                            <div class="verification-image-title">Address Proof</div>
+                            <img src="${verification.utilityImageUrl}" class="verification-image" alt="Address Proof">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn btn-primary" onclick="approveVerification('${verificationId}', '${verification.userId}')">
+                            Approve Verification
+                        </button>
+                        <button class="btn btn-secondary" onclick="rejectVerification('${verificationId}', '${verification.userId}')">
+                            Reject Verification
+                        </button>
+                    </div>
+                `;
+                
+                showModal('verificationDetailsModal');
+                
+            } catch (error) {
+                console.error('Error loading verification details:', error);
+                showToast('Error loading verification details', 'error');
+            }
+        }
+
+        async function loadListings() {
+            try {
+                const snapshot = await db.collection('listings')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                
+                listings = [];
+                snapshot.forEach(doc => {
+                    listings.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderListingsTable();
+                
+                // Set up real-time listener for listings
+                listingsListener = db.collection('listings')
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        listings = [];
+                        snapshot.forEach(doc => {
+                            listings.push({ id: doc.id, ...doc.data() });
+                        });
+                        renderListingsTable();
+                    });
+                
+            } catch (error) {
+                console.error('Error loading listings:', error);
+                showToast('Error loading listings', 'error');
+            }
+        }
+
+        function renderListingsTable() {
+            if (listings.length === 0) {
+                listingsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center;">
+                            <div class="empty-state">
+                                <i class="fas fa-utensils"></i>
+                                <h3>No listings found</h3>
+                                <p>Listings will appear here</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            listingsTableBody.innerHTML = '';
+            
+            listings.forEach(listing => {
+                // Format dates
+                const createdAt = listing.createdAt?.toDate() || new Date();
+                const formattedDate = createdAt.toLocaleDateString();
+                const expiryDate = listing.expiryDate?.toDate() || new Date();
+                const formattedExpiry = expiryDate.toLocaleDateString();
+                
+                // Get status badge
+                let statusBadge;
+                if (listing.status === 'available') {
+                    statusBadge = '<span class="status-badge verified">Available</span>';
+                } else if (listing.status === 'reserved') {
+                    statusBadge = '<span class="status-badge pending">Reserved</span>';
+                } else if (listing.status === 'claimed') {
+                    statusBadge = '<span class="status-badge verified">Claimed</span>';
+                } else {
+                    statusBadge = '<span class="status-badge unverified">Expired</span>';
+                }
+                
+                const listingRow = document.createElement('tr');
+                
+                listingRow.innerHTML = `
+                    <td>
+                        <h4 style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${listing.foodName || 'Unnamed Food'}</h4>
+                        <p style="font-size: 0.75rem; color: var(--gray-500);">${listing.category || 'Uncategorized'}</p>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="user-avatar" style="background-color: ${getRandomColor()}">
+                                ${listing.donorName ? listing.donorName.substring(0, 1) : 'D'}
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--gray-500);">${listing.donorName || 'Unknown'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>${formattedExpiry}</td>
+                `;
+                
+                listingsTableBody.appendChild(listingRow);
+            });
+        }
+
+        function renderRecentActivity(activities) {
+            if (!activities || activities.length === 0) {
+                recentActivityEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <h3>No recent activity</h3>
+                        <p>Activity will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            recentActivityEl.innerHTML = '';
+            
+            activities.forEach(activity => {
+                const activityEl = document.createElement('div');
+                activityEl.className = 'activity-item';
+                
+                // Format timestamp
+                const timeAgo = getTimeAgo(activity.timestamp?.toDate() || new Date());
+                
+                // Determine icon and color based on activity type
+                let icon, color;
+                switch(activity.type) {
+                    case 'verification':
+                        icon = 'fa-check-circle';
+                        color = 'var(--primary-blue)';
+                        break;
+                    case 'listing':
+                        icon = 'fa-utensils';
+                        color = 'var(--primary-blue)';
+                        break;
+                    case 'user':
+                        icon = 'fa-user';
+                        color = 'var(--primary-blue)';
+                        break;
+                    default:
+                        icon = 'fa-bell';
+                        color = 'var(--gray-500)';
+                }
+                
+                activityEl.innerHTML = `
+                    <div class="activity-icon" style="background-color: ${color}">
+                        <i class="fas ${icon}" style="color: white;"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p class="activity-message">${activity.message || 'Activity recorded'}</p>
+                        <p class="activity-time">${timeAgo}</p>
+                    </div>
+                `;
+                
+                recentActivityEl.appendChild(activityEl);
+            });
+        }
+
+        async function approveVerification(requestId, userId) {
+            try {
+                // Update verification request
+                await db.collection('verificationRequests').doc(requestId).update({
+                    status: 'approved',
+                    processedAt: new Date()
+                });
+                
+                // Update user's verification status
+                await db.collection('users').doc(userId).update({
                     verified: true,
-                    verificationStatus: 'approved',
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    verificationStatus: 'approved'
+                });
+                
+                // Record activity
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userName = userDoc.data()?.name || 'Unknown user';
+                
+                await db.collection('adminActivities').add({
+                    type: 'verification',
+                    message: `Approved verification for ${userName}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 // Hide modal
-                hideModal('verificationModal');
+                hideModal('verificationDetailsModal');
                 
-                // Show success message
-                showToast('Verification approved successfully!', 'success');
+                // Reload data
+                loadVerifications();
+                if (document.getElementById('usersPage').style.display !== 'none') {
+                    loadUsers();
+                }
+                
+                showToast('User verification approved', 'success');
+                
             } catch (error) {
                 console.error('Error approving verification:', error);
                 showToast('Error approving verification', 'error');
-                approveBtn.innerHTML = '<span>Approve</span>';
-                rejectBtn.disabled = false;
             }
         }
 
-        async function rejectVerification() {
+        async function rejectVerification(requestId, userId) {
             try {
-                if (!selectedVerificationId) return;
-                
-                // Show loading state
-                rejectBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i><span>Rejecting...</span>';
-                approveBtn.disabled = true;
-                
-                const verification = verificationRequests.find(v => v.id === selectedVerificationId);
-                if (!verification) return;
-                
-                // Update verification status
-                await db.collection('verifications').doc(selectedVerificationId).update({
+                // Update verification request
+                await db.collection('verificationRequests').doc(requestId).update({
                     status: 'rejected',
-                    reviewedBy: currentUser.uid,
-                    reviewedByName: userData.name,
-                    reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    processedAt: new Date()
                 });
                 
-                // Update user verification status
-                await db.collection('users').doc(verification.userId).update({
+                // Update user's verification status
+                await db.collection('users').doc(userId).update({
                     verified: false,
-                    verificationStatus: 'rejected',
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    verificationStatus: 'rejected'
+                });
+                
+                // Record activity
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userName = userDoc.data()?.name || 'Unknown user';
+                
+                await db.collection('adminActivities').add({
+                    type: 'verification',
+                    message: `Rejected verification for ${userName}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 // Hide modal
-                hideModal('verificationModal');
+                hideModal('verificationDetailsModal');
                 
-                // Show success message
-                showToast('Verification rejected', 'success');
+                // Reload data
+                loadVerifications();
+                if (document.getElementById('usersPage').style.display !== 'none') {
+                    loadUsers();
+                }
+                
+                showToast('User verification rejected', 'success');
+                
             } catch (error) {
                 console.error('Error rejecting verification:', error);
                 showToast('Error rejecting verification', 'error');
-                rejectBtn.innerHTML = '<span>Reject</span>';
-                approveBtn.disabled = false;
             }
         }
 
-        function viewUser(userId) {
-            selectedUserId = userId;
-            // In a real app, this would show a detailed view of the user
-            showToast('User details would show here', 'info');
-        }
-
-        function editUser(userId) {
-            selectedUserId = userId;
-            // In a real app, this would allow editing user details
-            showToast('Edit user functionality would be here', 'info');
-        }
-
-        async function deleteUser(userId) {
-            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                try {
-                    // In a real app, you would also delete the user's auth record
-                    await db.collection('users').doc(userId).delete();
-                    showToast('User deleted successfully', 'success');
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    showToast('Error deleting user', 'error');
-                }
-            }
-        }
-
-        async function updateAdminProfile() {
-            const newName = settingsName.value.trim();
-            
-            if (!newName) {
-                showToast('Please enter your name', 'error');
-                return;
-            }
-            
+        async function verifyUser(userId) {
             try {
-                // Update Firestore
-                await db.collection('admins').doc(currentUser.uid).update({
-                    name: newName
+                // Update user's verification status
+                await db.collection('users').doc(userId).update({
+                    verified: true,
+                    verificationStatus: 'approved'
                 });
                 
-                // Update auth profile
-                await currentUser.updateProfile({
-                    displayName: newName
+                // Record activity
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userName = userDoc.data()?.name || 'Unknown user';
+                
+                await db.collection('adminActivities').add({
+                    type: 'verification',
+                    message: `Manually verified user ${userName}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                // Update UI
-                userData.name = newName;
-                updateUserInterface();
+                showToast('User verified successfully', 'success');
                 
-                showToast('Profile updated successfully', 'success');
+                // Reload users
+                loadUsers();
+                
             } catch (error) {
-                console.error('Error updating profile:', error);
-                showToast('Error updating profile', 'error');
+                console.error('Error verifying user:', error);
+                showToast('Error verifying user', 'error');
             }
         }
 
-        async function changeAdminPassword() {
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('Please fill all password fields', 'error');
-                return;
-            }
-            
-            if (newPassword.length < 6) {
-                showToast('Password must be at least 6 characters', 'error');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                showToast('New passwords do not match', 'error');
-                return;
-            }
-            
+        async function rejectVerificationForUser(userId) {
             try {
-                // Reauthenticate user
-                const credential = firebase.auth.EmailAuthProvider.credential(
-                    currentUser.email, 
-                    currentPassword
-                );
+                // Update user's verification status
+                await db.collection('users').doc(userId).update({
+                    verified: false,
+                    verificationStatus: 'rejected'
+                });
                 
-                await currentUser.reauthenticateWithCredential(credential);
+                // Record activity
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userName = userDoc.data()?.name || 'Unknown user';
                 
-                // Update password
-                await currentUser.updatePassword(newPassword);
+                await db.collection('adminActivities').add({
+                    type: 'verification',
+                    message: `Rejected verification for ${userName}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
                 
-                // Clear fields
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
+                showToast('Verification rejected', 'success');
                 
-                showToast('Password changed successfully', 'success');
+                // Reload users
+                loadUsers();
+                
             } catch (error) {
-                console.error('Error changing password:', error);
-                
-                if (error.code === 'auth/wrong-password') {
-                    showToast('Current password is incorrect', 'error');
-                } else {
-                    showToast('Error changing password', 'error');
-                }
+                console.error('Error rejecting verification:', error);
+                showToast('Error rejecting verification', 'error');
             }
         }
 
-        function showPage(page) {
-            currentPage = page;
+        function logoutAdmin() {
+            // Clear authentication
+            adminAuthenticated = false;
+            sessionStorage.removeItem('adminAuthenticated');
             
-            // Update header title
-            if (page === 'dashboard') {
-                headerTitle.textContent = 'Dashboard';
-            } else if (page === 'verifications') {
-                headerTitle.textContent = 'Verification Requests';
-            } else if (page === 'users') {
-                headerTitle.textContent = 'User Management';
-            } else if (page === 'settings') {
-                headerTitle.textContent = 'Settings';
-            }
+            // Reset form
+            accessCodeInput.value = '';
+            accessCodeError.style.display = 'none';
             
-            // Hide all pages
-            document.querySelectorAll('.page-content').forEach(el => {
-                el.style.display = 'none';
-            });
+            // Clean up listeners
+            if (activityListener) activityListener();
+            if (usersListener) usersListener();
+            if (verificationsListener) verificationsListener();
+            if (listingsListener) listingsListener();
             
-            // Show the selected page
-            document.getElementById(`${page}Page`).style.display = 'block';
-            
-            // Update active nav items
-            document.querySelectorAll('.sidebar-item').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            document.querySelector(`.sidebar-item[onclick="showPage('${page}')"]`).classList.add('active');
-            
-            // Update bottom nav active state
-            document.querySelectorAll('.bottom-nav-item').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            document.querySelector(`.bottom-nav-item[onclick="showPage('${page}')"]`).classList.add('active');
-            
-            // Scroll to top
-            mainContent.scrollTo(0, 0);
+            // Show auth screen
+            showAuthScreen();
         }
 
-        function showAuthScreen() {
-            loadingScreen.style.display = 'none';
-            authScreen.style.display = 'flex';
-            appContainer.style.display = 'none';
-        }
-
-        function showApp() {
-            loadingScreen.style.display = 'none';
-            authScreen.style.display = 'none';
-            appContainer.style.display = 'block';
-            
-            // Show/hide bottom nav based on screen size
-            if (window.innerWidth < 768) {
-                bottomNav.style.display = 'flex';
-            } else {
-                bottomNav.style.display = 'none';
-            }
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
         }
 
         function hideModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-            approveBtn.innerHTML = '<span>Approve</span>';
-            rejectBtn.innerHTML = '<span>Reject</span>';
-            approveBtn.disabled = false;
-            rejectBtn.disabled = false;
-            selectedVerificationId = null;
         }
 
-        function showToast(message, type) {
+        // Helper functions
+        function getRandomColor() {
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
+                '#6366f1', '#ec4899', '#14b8a6', '#f97316'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return interval + " year" + (interval === 1 ? "" : "s") + " ago";
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return interval + " month" + (interval === 1 ? "" : "s") + " ago";
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return interval + " day" + (interval === 1 ? "" : "s") + " ago";
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return interval + " hour" + (interval === 1 ? "" : "s") + " ago";
+            
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return interval + " minute" + (interval === 1 ? "" : "s") + " ago";
+            
+            return Math.floor(seconds) + " second" + (seconds === 1 ? "" : "s") + " ago";
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
+            toast.id = toastId;
+            
+            let icon;
+            switch (type) {
+                case 'success':
+                    icon = 'fa-check-circle';
+                    break;
+                case 'error':
+                    icon = 'fa-exclamation-circle';
+                    break;
+                default:
+                    icon = 'fa-info-circle';
+            }
             
             toast.innerHTML = `
                 <div class="toast-icon">
-                    <i class="fas ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-times' : 'fa-info'}"></i>
+                    <i class="fas ${icon}"></i>
                 </div>
                 <div class="toast-content">
-                    <h3 class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
-                    <p class="toast-message">${message}</p>
+                    <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                    <div class="toast-message">${message}</div>
                 </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+                <button class="toast-close" onclick="dismissToast('${toastId}')">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
             
             toastContainer.appendChild(toast);
             
-            // Auto-remove after 5 seconds
+            // Auto-dismiss after 5 seconds
             setTimeout(() => {
+                dismissToast(toastId);
+            }, 5000);
+        }
+
+        function dismissToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
                 toast.classList.add('hide');
                 setTimeout(() => {
                     toast.remove();
                 }, 300);
-            }, 5000);
-        }
-
-        // Auth functions
-        function switchTab(tab) {
-            const loginTab = document.getElementById('loginTab');
-            const signupTab = document.getElementById('signupTab');
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            const tabIndicator = document.getElementById('tabIndicator');
-            
-            if (tab === 'login') {
-                loginTab.classList.add('active');
-                signupTab.classList.remove('active');
-                
-                // Animate tab indicator
-                tabIndicator.style.left = '0';
-                tabIndicator.style.width = '50%';
-                
-                // Animate forms
-                if (signupForm.style.display !== 'none') {
-                    signupForm.style.animation = 'formSwitchOut 0.4s forwards';
-                    setTimeout(() => {
-                        signupForm.style.display = 'none';
-                        loginForm.style.display = 'flex';
-                        loginForm.style.animation = 'formSwitchIn 0.4s forwards';
-                    }, 300);
-                }
-            } else {
-                loginTab.classList.remove('active');
-                signupTab.classList.add('active');
-                
-                // Animate tab indicator
-                tabIndicator.style.left = '50%';
-                tabIndicator.style.width = '50%';
-                
-                // Animate forms
-                if (loginForm.style.display !== 'none') {
-                    loginForm.style.animation = 'formSwitchOut 0.4s forwards';
-                    setTimeout(() => {
-                        loginForm.style.display = 'none';
-                        signupForm.style.display = 'flex';
-                        signupForm.style.animation = 'formSwitchIn 0.4s forwards';
-                    }, 300);
-                }
             }
         }
-        
-        async function login() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const emailField = document.getElementById('loginEmail').parentElement;
-            const passwordField = document.getElementById('loginPassword').parentElement;
-            const emailError = document.getElementById('loginEmailError');
-            const passwordError = document.getElementById('loginPasswordError');
-            
-            let isValid = true;
-            
-            // Reset errors
-            emailField.classList.remove('error');
-            passwordField.classList.remove('error');
-            emailError.style.display = 'none';
-            passwordError.style.display = 'none';
-            
-            // Validate email
-            if (!email || !email.includes('@')) {
-                emailField.classList.add('error');
-                emailError.style.display = 'block';
-                isValid = false;
-            }
-            
-            // Validate password
-            if (!password || password.length < 6) {
-                passwordField.classList.add('error');
-                passwordError.style.display = 'block';
-                isValid = false;
-            }
-            
-            if (!isValid) return;
-            
-            try {
-                // Show loading state
-                const loginBtn = document.getElementById('loginBtn');
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i><span>Logging In...</span>';
-                
-                // Sign in with Firebase
-                await auth.signInWithEmailAndPassword(email, password);
-                
-                // Success - handled by auth state listener
-            } catch (error) {
-                console.error('Login error:', error);
-                
-                // Show error message
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    showToast('Invalid email or password', 'error');
-                } else {
-                    showToast('Login failed. Please try again.', 'error');
-                }
-                
-                // Reset button
-                loginBtn.innerHTML = '<span>Login</span>';
-            }
-        }
-        
-        async function signup() {
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            const adminCode = document.getElementById('adminCode').value;
-            const nameField = document.getElementById('signupName').parentElement;
-            const emailField = document.getElementById('signupEmail').parentElement;
-            const passwordField = document.getElementById('signupPassword').parentElement;
-            const adminCodeField = document.getElementById('adminCode').parentElement;
-            const nameError = document.getElementById('signupNameError');
-            const emailError = document.getElementById('signupEmailError');
-            const passwordError = document.getElementById('signupPasswordError');
-            const adminCodeError = document.getElementById('adminCodeError');
-            
-            let isValid = true;
-            
-            // Reset errors
-            nameField.classList.remove('error');
-            emailField.classList.remove('error');
-            passwordField.classList.remove('error');
-            adminCodeField.classList.remove('error');
-            nameError.style.display = 'none';
-            emailError.style.display = 'none';
-            passwordError.style.display = 'none';
-            adminCodeError.style.display = 'none';
-            
-            // Validate name
-            if (!name) {
-                nameField.classList.add('error');
-                nameError.style.display = 'block';
-                isValid = false;
-            }
-            
-            // Validate email
-            if (!email || !email.includes('@')) {
-                emailField.classList.add('error');
-                emailError.style.display = 'block';
-                isValid = false;
-            }
-            
-            // Validate password
-            if (!password || password.length < 6) {
-                passwordField.classList.add('error');
-                passwordError.style.display = 'block';
-                isValid = false;
-            }
-            
-            // Validate admin code
-            if (!adminCode || adminCode !== ADMIN_ACCESS_CODE) {
-                adminCodeField.classList.add('error');
-                adminCodeError.style.display = 'block';
-                isValid = false;
-            }
-            
-            if (!isValid) return;
-            
-            try {
-                // Show loading state
-                const signupBtn = document.getElementById('signupBtn');
-                signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i><span>Creating Account...</span>';
-                
-                // Create user with Firebase
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                
-                // Update user profile
-                await userCredential.user.updateProfile({
-                    displayName: name
-                });
-                
-                // Create admin document in Firestore
-                await db.collection('admins').doc(userCredential.user.uid).set({
-                    name: name,
-                    email: email,
-                    role: 'admin',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Show success message
-                showToast('Admin account created successfully!', 'success');
-                
-                // Automatically log in
-                currentUser = userCredential.user;
-                await fetchUserData();
-                showApp();
-            } catch (error) {
-                console.error('Signup error:', error);
-                
-                // Show error message
-                if (error.code === 'auth/email-already-in-use') {
-                    showToast('Email already in use', 'error');
-                } else {
-                    showToast('Signup failed. Please try again.', 'error');
-                }
-                
-                // Reset button
-                signupBtn.innerHTML = '<span>Create Admin Account</span>';
-            }
-        }
-        
-        async function logout() {
-            try {
-                await auth.signOut();
-                showToast('Logged out successfully', 'success');
-                showAuthScreen();
-            } catch (error) {
-                console.error('Logout error:', error);
-                showToast('Logout failed', 'error');
-            }
-        }
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (appContainer.style.display === 'block') {
-                if (window.innerWidth < 768) {
-                    bottomNav.style.display = 'flex';
-                } else {
-                    bottomNav.style.display = 'none';
-                }
-            }
-        });
     </script>
 </body>
 </html>
