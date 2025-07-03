@@ -43,6 +43,7 @@ The admin portal provides tools to manage users, verify accounts, and monitor pl
 - If stats aren't updating: verify Firestore database connection
 - For login issues: ensure correct access code and check console for errors
 
-- live demo at https://adminfoodshare.netlify.app/# 
+- live demo at https://adminfoodshare.netlify.app/#
+- Access code "ADMIN124" 
 
 Contact developers for any technical issues with the admin portal.
